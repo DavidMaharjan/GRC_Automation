@@ -1,0 +1,132 @@
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
+Test Case Name: test_login
+Test Case ID: TC001
+Expected Result: User should be able to login successfully
+Actual Result: Login failed: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("GRC Operations Centre")
+
+Status: FAIL
+----------------------------------------
