@@ -81,7 +81,11 @@ def pytest_sessionfinish(session, exitstatus):
         return
 
     os.makedirs("reports", exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Find the next version number — e.g. V1, V2, V3 ...
+    version = 1
+    while os.path.isfile(os.path.join("reports", f"test_report_V{version}.xlsx")):
+        version += 1
 
     # ---- CSV ------------------------------------------------------------------
     csv_path = os.path.join("reports", "test_results.csv")
@@ -146,7 +150,7 @@ def pytest_sessionfinish(session, exitstatus):
 
         ws.row_dimensions[1].height = 30
 
-        xlsx_path = os.path.join("reports", f"test_report_{timestamp}.xlsx")
+        xlsx_path = os.path.join("reports", f"test_report_V{version}.xlsx")
         wb.save(xlsx_path)
         print(f"[Report] Excel -> {xlsx_path}")
 

@@ -47,15 +47,36 @@ def test_invalid_credentials(page):
         page.get_by_role("textbox", name="Enter your email (eg, john@").fill("wrong@example.com")
         page.get_by_role("textbox", name="Enter your password").fill("WrongPassword123")
         page.get_by_role("button", name="Sign In").click()
-        expect(page.get_by_text("Invalid credentials")).to_be_visible()
+        expect(page.get_by_text("Sign-in failed")).to_be_visible()
         record_result(id, name, module, priority, severity, expected, "Error message displayed", "PASS")
     except Exception as e:
         record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
         raise
 
 
-def test_login_empty_email(page):
+def test_valid_email_wrong_password(page):
     id       = "TC_LG_003"
+    name     = "test_valid_email_wrong_password"
+    module   = "Authentication"
+    priority = "High"
+    severity = "Critical"
+    expected = "Error message shown when correct email is used with wrong password"
+
+    try:
+        page.goto(SIGN_IN_URL)
+        page.wait_for_timeout(2000)
+        page.get_by_role("textbox", name="Enter your email (eg, john@").fill(LOGIN_EMAIL)
+        page.get_by_role("textbox", name="Enter your password").fill("WrongPassword123")
+        page.get_by_role("button", name="Sign In").click()
+        expect(page.get_by_text("Password is incorrect. Try again, or use another method.")).to_be_visible()
+        record_result(id, name, module, priority, severity, expected, "Sign-in failed error shown", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_login_empty_email(page):
+    id       = "TC_LG_004"
     name     = "test_login_empty_email"
     module   = "Authentication"
     priority = "High"
@@ -76,7 +97,7 @@ def test_login_empty_email(page):
 
 
 def test_login_empty_password(page):
-    id       = "TC_LG_004"
+    id       = "TC_LG_005"
     name     = "test_login_empty_password"
     module   = "Authentication"
     priority = "High"
@@ -97,7 +118,7 @@ def test_login_empty_password(page):
 
 
 def test_login_invalid_email_format(page):
-    id       = "TC_LG_005"
+    id       = "TC_LG_006"
     name     = "test_login_invalid_email_format"
     module   = "Authentication"
     priority = "Medium"
@@ -107,11 +128,13 @@ def test_login_invalid_email_format(page):
     try:
         page.goto(SIGN_IN_URL)
         page.wait_for_timeout(2000)
-        page.get_by_role("textbox", name="Enter your email (eg, john@").fill("notanemail")
+        email_input = page.get_by_role("textbox", name="Enter your email (eg, john@")
+        email_input.fill("notanemail")
         page.get_by_role("textbox", name="Enter your password").fill(LOGIN_PASSWORD)
         page.get_by_role("button", name="Sign In").click()
-        expect(page.get_by_text("Invalid email")).to_be_visible()
-        record_result(id, name, module, priority, severity, expected, "Invalid email format error shown", "PASS")
+        validation_message = email_input.evaluate("el => el.validationMessage")
+        assert "@" in validation_message, f"Expected browser validation for invalid email, got: '{validation_message}'"
+        record_result(id, name, module, priority, severity, expected, f"Browser validation: {validation_message}", "PASS")
     except Exception as e:
         record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
         raise

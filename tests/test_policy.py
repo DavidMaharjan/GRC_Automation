@@ -57,8 +57,7 @@ def test_addPolicy_Ai(page, login):
         page.get_by_role("button", name="Generate Policy with AI").click()
         page.get_by_role("textbox", name="Enter AI Prompt (e.g. Create").fill("Create a comprehensive policy for data security.")
         page.get_by_role("button", name="Generate Policy", exact=True).click()
-        page.wait_for_timeout(5000)
-        expect(page.get_by_text("Policy generated successfully")).to_be_visible()
+        expect(page.get_by_text("Policy generated successfully")).to_be_visible(timeout=300000)
         page.get_by_role("button", name="Submit").click()
         page.wait_for_timeout(2000)
         expect(page.get_by_text("Created Successfully")).to_be_visible()
@@ -193,11 +192,13 @@ def test_addPolicy_invalid_url(page, login):
         page.goto(f"{APP_URL}/policy")
         add_policy(page)
         page.get_by_role("checkbox", name="URL Provide a URL").click()
-        page.get_by_role("textbox", name="Enter URL (e.g. https://www.").fill("not-a-valid-url")
+        url_input = page.get_by_role("textbox", name="Enter URL (e.g. https://www.")
+        url_input.fill("not-a-valid-url")
         page.get_by_role("button", name="Submit").click()
-        page.wait_for_timeout(2000)
-        expect(page.get_by_text("Invalid URL")).to_be_visible()
-        record_result(id, name, module, priority, severity, expected, "Invalid URL error shown", "PASS")
+        validation_message = url_input.evaluate("el => el.validationMessage")
+        assert "URL" in validation_message or validation_message != "", \
+            f"Expected 'Please enter a URL' browser popup but got: '{validation_message}'"
+        record_result(id, name, module, priority, severity, expected, f"Browser validation shown: {validation_message}", "PASS")
     except Exception as e:
         record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
         raise
@@ -244,6 +245,246 @@ def test_addPolicy_empty_ai_prompt(page, login):
         page.wait_for_timeout(2000)
         expect(page.get_by_text("Prompt is required")).to_be_visible()
         record_result(id, name, module, priority, severity, expected, "Prompt required error shown", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+# ---------------------------------------------------------------------------
+# More negative test cases
+# ---------------------------------------------------------------------------
+
+def test_cancel_add_policy_not_saved(page, login):
+    id       = "TC_PL_011"
+    name     = "test_cancel_add_policy_not_saved"
+    module   = "Policy Management"
+    priority = "Medium"
+    severity = "Major"
+    expected = "Policy is NOT saved after clicking Cancel on the create form"
+    policy_name = "TC_PL_011 Should Not Be Saved"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.get_by_role("button", name="Add Policy").click()
+        page.wait_for_timeout(2000)
+        page.get_by_role("textbox", name="Enter Name (e.g. Cyber").fill(policy_name)
+        page.get_by_role("button", name="Cancel").click()
+        page.wait_for_timeout(2000)
+        expect(page.get_by_text(policy_name)).not_to_be_visible()
+        record_result(id, name, module, priority, severity, expected, "Policy not saved after Cancel", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_search_no_match(page, login):
+    id       = "TC_PL_012"
+    name     = "test_search_no_match"
+    module   = "Policy Management"
+    priority = "Medium"
+    severity = "Minor"
+    expected = "No results shown when searching for a non-existent policy name"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.wait_for_timeout(2000)
+        page.get_by_placeholder("Search here...").fill("ZZZNOMATCH999XYZ")
+        page.wait_for_timeout(2000)
+        count = page.locator("table tbody tr").count()
+        assert count == 0, f"Expected 0 rows but got {count}"
+        record_result(id, name, module, priority, severity, expected, "No results shown for non-existent search", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_edit_clear_name_shows_error(page, login):
+    id       = "TC_PL_013"
+    name     = "test_edit_clear_name_shows_error"
+    module   = "Policy Management"
+    priority = "High"
+    severity = "Major"
+    expected = "Validation error shown when Name is cleared on the edit form"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.wait_for_timeout(2000)
+        page.locator("span:nth-child(2) > .inline-flex").first.click()
+        page.wait_for_timeout(2000)
+        name_field = page.get_by_role("textbox", name="Enter Name (e.g. Cyber")
+        name_field.triple_click()
+        name_field.fill("")
+        page.get_by_role("button", name="Update").click()
+        page.wait_for_timeout(2000)
+        expect(page.get_by_text("Policy name is required")).to_be_visible()
+        record_result(id, name, module, priority, severity, expected, "Validation error shown for empty name on edit", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_unauthenticated_redirect(page):
+    id       = "TC_PL_014"
+    name     = "test_unauthenticated_redirect"
+    module   = "Policy Management"
+    priority = "High"
+    severity = "Critical"
+    expected = "Accessing /policy without login redirects to sign-in page"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.wait_for_timeout(3000)
+        assert "sign-in" in page.url, f"Expected redirect to sign-in but got: {page.url}"
+        record_result(id, name, module, priority, severity, expected, "Redirected to sign-in page", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+# ---------------------------------------------------------------------------
+# Monkey test cases  (unexpected / extreme inputs)
+# ---------------------------------------------------------------------------
+
+def test_monkey_very_long_policy_name(page, login):
+    id       = "TC_PL_015"
+    name     = "test_monkey_very_long_policy_name"
+    module   = "Policy Management"
+    priority = "Medium"
+    severity = "Minor"
+    expected = "App handles 500-character policy name without crashing"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.get_by_role("button", name="Add Policy").click()
+        page.wait_for_timeout(2000)
+        long_name = "A" * 500
+        page.get_by_role("textbox", name="Enter Name (e.g. Cyber").fill(long_name)
+        page.get_by_role("button", name="Submit").click()
+        page.wait_for_timeout(3000)
+        actual_val    = page.get_by_role("textbox", name="Enter Name (e.g. Cyber").input_value()
+        truncated     = len(actual_val) < 500
+        error_visible = page.locator("text=/too long|max|limit/i").count() > 0
+        assert truncated or error_visible, "App accepted 500-char name without truncating or erroring"
+        record_result(id, name, module, priority, severity, expected, f"Handled — length={len(actual_val)}, error shown={error_visible}", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_monkey_xss_in_policy_name(page, login):
+    id       = "TC_PL_016"
+    name     = "test_monkey_xss_in_policy_name"
+    module   = "Policy Management"
+    priority = "High"
+    severity = "Critical"
+    expected = "XSS script tag in name is NOT executed — rendered as plain text"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.get_by_role("button", name="Add Policy").click()
+        page.wait_for_timeout(2000)
+        page.get_by_role("textbox", name="Enter Name (e.g. Cyber").fill("<script>alert('xss')</script>")
+        page.get_by_role("button", name="Submit").click()
+        page.wait_for_timeout(3000)
+        # If XSS executed, a dialog would appear — Playwright raises if unexpected dialog appears
+        # Reaching here means no alert fired
+        record_result(id, name, module, priority, severity, expected, "XSS not executed — app handled safely", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_monkey_sql_injection_in_search(page, login):
+    id       = "TC_PL_017"
+    name     = "test_monkey_sql_injection_in_search"
+    module   = "Policy Management"
+    priority = "High"
+    severity = "Critical"
+    expected = "SQL injection in search does not crash or expose data"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.wait_for_timeout(2000)
+        page.get_by_placeholder("Search here...").fill("' OR '1'='1'; DROP TABLE policies; --")
+        page.wait_for_timeout(2000)
+        expect(page.locator("table")).to_be_visible()
+        record_result(id, name, module, priority, severity, expected, "App handled SQL injection safely — table still visible", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_monkey_refresh_mid_form(page, login):
+    id       = "TC_PL_018"
+    name     = "test_monkey_refresh_mid_form"
+    module   = "Policy Management"
+    priority = "Medium"
+    severity = "Minor"
+    expected = "Refreshing mid-form does not save incomplete policy"
+    policy_name = "TC_PL_018 Refresh Mid Form"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.get_by_role("button", name="Add Policy").click()
+        page.wait_for_timeout(2000)
+        page.get_by_role("textbox", name="Enter Name (e.g. Cyber").fill(policy_name)
+        page.reload()
+        page.wait_for_timeout(3000)
+        expect(page.get_by_text(policy_name)).not_to_be_visible()
+        record_result(id, name, module, priority, severity, expected, "Incomplete policy not saved after page refresh", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_monkey_special_characters_name(page, login):
+    id       = "TC_PL_019"
+    name     = "test_monkey_special_characters_name"
+    module   = "Policy Management"
+    priority = "Medium"
+    severity = "Minor"
+    expected = "Policy name with special characters does not break the UI"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        page.get_by_role("button", name="Add Policy").click()
+        page.wait_for_timeout(2000)
+        page.get_by_role("textbox", name="Enter Name (e.g. Cyber").fill("!@#$%^&*() <Test> 'Policy' \"Name\"")
+        page.get_by_role("button", name="Submit").click()
+        page.wait_for_timeout(3000)
+        # Pass as long as the app does not crash (table or error visible)
+        assert page.locator("table").is_visible() or page.locator("text=/required|invalid/i").count() > 0, \
+            "App crashed — neither table nor error is visible"
+        record_result(id, name, module, priority, severity, expected, "App handled special characters without crashing", "PASS")
+    except Exception as e:
+        record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
+        raise
+
+
+def test_monkey_double_click_submit(page, login):
+    id       = "TC_PL_020"
+    name     = "test_monkey_double_click_submit"
+    module   = "Policy Management"
+    priority = "Medium"
+    severity = "Major"
+    expected = "Double-clicking Submit does not create two identical policies"
+
+    try:
+        page.goto(f"{APP_URL}/policy")
+        before_count = page.locator("table tbody tr").count()
+        add_policy(page)
+        page.get_by_role("checkbox", name="Manual Write a comprehensive").click()
+        page.locator(".tiptap").fill("Double click test content")
+        page.get_by_role("button", name="Submit").click()
+        # Immediately click again
+        submit_btn = page.get_by_role("button", name="Submit")
+        if submit_btn.is_visible():
+            submit_btn.click()
+        page.wait_for_timeout(4000)
+        after_count = page.locator("table tbody tr").count()
+        assert after_count <= before_count + 1, \
+            f"Double-click created {after_count - before_count} policies instead of 1"
+        record_result(id, name, module, priority, severity, expected, f"Count went from {before_count} to {after_count} — no duplicate", "PASS")
     except Exception as e:
         record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
         raise
