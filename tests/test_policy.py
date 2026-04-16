@@ -1,3 +1,4 @@
+import re
 import uuid
 from playwright.sync_api import expect
 from conftest import record_result, short_error, APP_URL
@@ -243,7 +244,7 @@ def test_addPolicy_empty_ai_prompt(page, login):
         page.get_by_role("textbox", name="Enter AI Prompt (e.g. Create").fill("")
         page.get_by_role("button", name="Generate Policy", exact=True).click()
         page.wait_for_timeout(2000)
-        expect(page.get_by_text("Prompt is required")).to_be_visible()
+        expect(page.get_by_text("AI Prompt must be at least 20 characters")).to_be_visible()
         record_result(id, name, module, priority, severity, expected, "Prompt required error shown", "PASS")
     except Exception as e:
         record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
@@ -291,7 +292,7 @@ def test_search_no_match(page, login):
         page.get_by_placeholder("Search here...").fill("ZZZNOMATCH999XYZ")
         page.wait_for_timeout(2000)
         count = page.locator("table tbody tr").count()
-        assert count == 0, f"Expected 0 rows but got {count}"
+        expect(page.get_by_role("heading", name="No data available", level=3)).to_be_visible()
         record_result(id, name, module, priority, severity, expected, "No results shown for non-existent search", "PASS")
     except Exception as e:
         record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
@@ -309,9 +310,9 @@ def test_edit_clear_name_shows_error(page, login):
     try:
         page.goto(f"{APP_URL}/policy")
         page.wait_for_timeout(2000)
-        page.locator("span:nth-child(2) > .inline-flex").first.click()
+        page.locator("button:has(.lucide-square-pen)").first.click()
         page.wait_for_timeout(2000)
-        name_field = page.get_by_role("textbox", name="Enter Name (e.g. Cyber")
+        name_field = page.locator("input[name='name']")
         name_field.triple_click()
         name_field.fill("")
         page.get_by_role("button", name="Update").click()
@@ -358,14 +359,11 @@ def test_monkey_very_long_policy_name(page, login):
         page.get_by_role("button", name="Add Policy").click()
         page.wait_for_timeout(2000)
         long_name = "A" * 500
-        page.get_by_role("textbox", name="Enter Name (e.g. Cyber").fill(long_name)
+        page.locator("input[name='name']").fill(long_name)
         page.get_by_role("button", name="Submit").click()
-        page.wait_for_timeout(3000)
-        actual_val    = page.get_by_role("textbox", name="Enter Name (e.g. Cyber").input_value()
-        truncated     = len(actual_val) < 500
-        error_visible = page.locator("text=/too long|max|limit/i").count() > 0
-        assert truncated or error_visible, "App accepted 500-char name without truncating or erroring"
-        record_result(id, name, module, priority, severity, expected, f"Handled — length={len(actual_val)}, error shown={error_visible}", "PASS")
+        page.wait_for_timeout(2000)
+        expect(page.get_by_text("Policy name must be less than 200 characters")).to_be_visible()
+        record_result(id, name, module, priority, severity, expected, "Validation error shown for name exceeding 200 characters", "PASS")
     except Exception as e:
         record_result(id, name, module, priority, severity, expected, short_error(e), "FAIL")
         raise
@@ -470,8 +468,11 @@ def test_monkey_double_click_submit(page, login):
     expected = "Double-clicking Submit does not create two identical policies"
 
     try:
+        
         page.goto(f"{APP_URL}/policy")
-        before_count = page.locator("table tbody tr").count()
+        page.locator("div", has_text=re.compile(r"Total \d+ items")).first.wait_for()
+        before_text  = page.locator("div", has_text=re.compile(r"Total \d+ items")).first.text_content()
+        before_count = int(re.search(r"\d+", before_text).group())
         add_policy(page)
         page.get_by_role("checkbox", name="Manual Write a comprehensive").click()
         page.locator(".tiptap").fill("Double click test content")
@@ -481,7 +482,9 @@ def test_monkey_double_click_submit(page, login):
         if submit_btn.is_visible():
             submit_btn.click()
         page.wait_for_timeout(4000)
-        after_count = page.locator("table tbody tr").count()
+        page.locator("div", has_text=re.compile(r"Total \d+ items")).first.wait_for()
+        after_text  = page.locator("div", has_text=re.compile(r"Total \d+ items")).first.text_content()
+        after_count = int(re.search(r"\d+", after_text).group())
         assert after_count <= before_count + 1, \
             f"Double-click created {after_count - before_count} policies instead of 1"
         record_result(id, name, module, priority, severity, expected, f"Count went from {before_count} to {after_count} — no duplicate", "PASS")
