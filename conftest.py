@@ -1,7 +1,6 @@
 import os
 import csv
 import pytest
-from datetime import datetime
 from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 
@@ -12,9 +11,8 @@ LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
 APP_URL        = os.getenv("APP_URL")
 
 
-# ---------------------------------------------------------------------------
+
 # This list stores all test results. Each test adds one entry to it.
-# ---------------------------------------------------------------------------
 _results = []
 
 
@@ -23,24 +21,22 @@ def short_error(e):
     return f"{type(e).__name__}: {str(e).splitlines()[0]}"
 
 
-def record_result(id, name, module, priority, severity, expected, actual, status):
+def record_result(id, scenario, description, test_data, steps, expected, status, remarks):
     """Call this at the end of every test to save the result."""
     _results.append({
-        "Test Case ID":   id,
-        "Test Case Name": name,
-        "Module":         module,
-        "Priority":       priority,
-        "Severity":       severity,
-        "Expected Result": expected,
-        "Actual Result":  actual,
-        "Status":         status,
-        "Timestamp":      datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Test Case ID":            id,
+        "Test Scenario":           scenario,
+        "Test Case Description":   description,
+        "Test Data":               test_data,
+        "Steps":                   steps,
+        "Expected Result":         expected,
+        "Test Status (PASS/FAIL)": status,
+        "Remarks":                 remarks,
     })
 
 
-# ---------------------------------------------------------------------------
+
 # Playwright fixtures — these set up the browser and pages for your tests
-# ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
 def browser():
@@ -66,13 +62,13 @@ def login(page):
     page.wait_for_timeout(5000)
 
 
-# ---------------------------------------------------------------------------
+
 # After ALL tests finish, write the Excel and CSV reports
-# ---------------------------------------------------------------------------
+
 
 HEADERS = [
-    "Test Case ID", "Test Case Name", "Module", "Priority", "Severity",
-    "Expected Result", "Actual Result", "Status", "Timestamp",
+    "Test Case ID", "Test Scenario", "Test Case Description", "Test Data",
+    "Steps", "Expected Result", "Test Status (PASS/FAIL)", "Remarks",
 ]
 
 
@@ -87,7 +83,7 @@ def pytest_sessionfinish(session, exitstatus):
     while os.path.isfile(os.path.join("reports", f"test_report_V{version}.xlsx")):
         version += 1
 
-    # ---- CSV ------------------------------------------------------------------
+    # ---- CSV 
     csv_path = os.path.join("reports", "test_results.csv")
     file_exists = os.path.isfile(csv_path)
     with open(csv_path, "a", newline="", encoding="utf-8") as f:
@@ -97,7 +93,7 @@ def pytest_sessionfinish(session, exitstatus):
         writer.writerows(_results)
     print(f"\n[Report] CSV  -> {csv_path}")
 
-    # ---- Excel ----------------------------------------------------------------
+    # ---- Excel  
     try:
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -144,7 +140,7 @@ def pytest_sessionfinish(session, exitstatus):
                 cell.border = thin_border
 
         # Set column widths
-        col_widths = [14, 28, 20, 10, 10, 50, 50, 8, 20]
+        col_widths = [14, 20, 35, 35, 45, 50, 20, 50]
         for col, width in enumerate(col_widths, start=1):
             ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
 
