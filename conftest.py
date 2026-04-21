@@ -39,9 +39,10 @@ def record_result(id, scenario, description, test_data, steps, expected, status,
 # Playwright fixtures — these set up the browser and pages for your tests
 
 @pytest.fixture(scope="session")
-def browser():
+def browser(request):
+    browser_name = (request.config.getoption("--browser") or ["chromium"])[0]
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = getattr(p, browser_name).launch(headless=False)
         yield browser
         browser.close()
 
@@ -119,23 +120,21 @@ def pytest_sessionfinish(session, exitstatus):
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             cell.border = thin_border
 
-        # Colour rows green/red/yellow based on status
+        # Colour only the "Test Status (PASS/FAIL)" cell — green for PASS, red for FAIL
         pass_fill = PatternFill("solid", fgColor="D6F5D6")
         fail_fill = PatternFill("solid", fgColor="FFD6D6")
-        skip_fill = PatternFill("solid", fgColor="FFF3CD")
+        no_fill   = PatternFill(fill_type=None)
+        status_col = HEADERS.index("Test Status (PASS/FAIL)") + 1  # 1-based column index
 
         for row, result in enumerate(_results, start=2):
-            status = result.get("Status", "")
-            if status == "PASS":
-                row_fill = pass_fill
-            elif status == "FAIL":
-                row_fill = fail_fill
-            else:
-                row_fill = skip_fill
+            status = result.get("Test Status (PASS/FAIL)", "")
 
             for col, key in enumerate(HEADERS, start=1):
                 cell = ws.cell(row=row, column=col, value=result.get(key, ""))
-                cell.fill = row_fill
+                if col == status_col:
+                    cell.fill = pass_fill if status == "PASS" else fail_fill if status == "FAIL" else no_fill
+                else:
+                    cell.fill = no_fill
                 cell.alignment = Alignment(vertical="top", wrap_text=True)
                 cell.border = thin_border
 
